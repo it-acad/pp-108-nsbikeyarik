@@ -44,4 +44,12 @@ def delete_author(request, author_id):
         author.delete()
     return redirect('author:author_list')
 
+@user_passes_test(is_librarian)
+def author_detail(request, author_id):
+    """
+    Display detailed information about a single author, including their books.
+    """
+    author = get_object_or_404(Author, id=author_id)
+    books = author.written_books.all()  # Fetch books written by this author
+    return render(request, 'author/author_detail.html', {'author': author, 'books': books})
 

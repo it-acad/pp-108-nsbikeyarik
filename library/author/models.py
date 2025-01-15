@@ -4,12 +4,17 @@ class Author(models.Model):
     """
     This class represents an Author.
     """
-    name = models.CharField(blank=True, max_length=20)
+    name = models.CharField(max_length=20)
+    # name = models.CharField(max_length=20, blank=False)
+    # name = models.CharField(blank=True, max_length=20)
     surname = models.CharField(blank=True, max_length=20)
     patronymic = models.CharField(blank=True, max_length=20)
     id = models.AutoField(primary_key=True)
-    
-    books = models.ManyToManyField('book.Book', related_name='authors_of_book')
+
+
+    books = models.ManyToManyField('book.Book', related_name='author_books')
+    # books = models.ManyToManyField('book.Book', related_name='authors_of_book')
+
 
     def __str__(self):
         return f"\'id\': {self.pk}, \'name\': \'{self.name}\', \'surname\': \'{self.surname}\', \'patronymic\': \'{self.patronymic}\'"
@@ -51,32 +56,60 @@ class Author(models.Model):
             return False
 
     @staticmethod
-    def create(name, surname, patronymic):
+    def create(name, surname=None, patronymic=None):
         """
-        param name: Describes name of the author
-        type name: str max_length=20
-        param surname: Describes surname of the author
-        type surname: str max_length=20
-        param patronymic: Describes patronymic of the author
-        type patronymic: str max_length=20
-        :return: a new author object which is also written into the DB
+        Creates a new author and saves it to the database.
         """
-        if name and len(name) <= 20 and surname and len(surname) <= 20 and patronymic and len(patronymic) <= 20:
-            author = Author(name=name, surname=surname, patronymic=patronymic)
-            author.save()
-            return author
+        if not name or len(name) > 20:
+            return None
+        if surname and len(surname) > 20:
+            return None
+        if patronymic and len(patronymic) > 20:
+            return None
+
+        author = Author(name=name, surname=surname, patronymic=patronymic)
+        author.save()
+        return author
 
     def to_dict(self):
         """
-        :return: author id, author name, author surname, author patronymic
-        :Example:
-        | {
-        |   'id': 8,
-        |   'name': 'fn',
-        |   'surname': 'mn',
-        |   'patronymic': 'ln',
-        | }
+        Returns a dictionary representation of the author.
         """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'surname': self.surname,
+            'patronymic': self.patronymic,
+            'written_books': [{'id': book.id, 'name': book.name} for book in self.written_books.all()]
+        }
+
+    # @staticmethod
+    # def create(name, surname, patronymic):
+    #     """
+    #     param name: Describes name of the author
+    #     type name: str max_length=20
+    #     param surname: Describes surname of the author
+    #     type surname: str max_length=20
+    #     param patronymic: Describes patronymic of the author
+    #     type patronymic: str max_length=20
+    #     :return: a new author object which is also written into the DB
+    #     """
+    #     if name and len(name) <= 20 and surname and len(surname) <= 20 and patronymic and len(patronymic) <= 20:
+    #         author = Author(name=name, surname=surname, patronymic=patronymic)
+    #         author.save()
+    #         return author
+
+    # def to_dict(self):
+    #     """
+    #     :return: author id, author name, author surname, author patronymic
+    #     :Example:
+    #     | {
+    #     |   'id': 8,
+    #     |   'name': 'fn',
+    #     |   'surname': 'mn',
+    #     |   'patronymic': 'ln',
+    #     | }
+    #     """
         # return self.__dict__
 
     def update(self,

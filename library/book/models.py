@@ -2,12 +2,13 @@ from django.db import models
 from author.models import Author
 
 class Book(models.Model):
-
-    name = models.CharField(blank=True, max_length=128)
+    name = models.CharField(max_length=128, blank=False)
+    # name = models.CharField(blank=True, max_length=128)
     description = models.CharField(blank=True, max_length=256)
     count = models.IntegerField(default=10)
     id = models.AutoField(primary_key=True)
-    authors = models.ManyToManyField('author.Author', related_name='written_books')
+    authors = models.ManyToManyField('author.Author', related_name='books_written')
+
 
     def __str__(self):
         return f"'id': {self.id}, 'name': '{self.name}', 'description': '{self.description}', 'count': {self.count}, 'authors': {[author.id for author in self.authors.all()]}"
@@ -41,42 +42,69 @@ class Book(models.Model):
 
     @staticmethod
     def create(name, description, count=10, authors=None):
-        """
-        param name: Describes name of the book
-        type name: str max_length=128
-        param description: Describes description of the book
-        type description: str
-        param count: Describes count of the book
-        type count: int default=10
-        param authors: list of Authors
-        type authors: list->Author
-        :return: a new book object which is also written into the DB
-        """
         if len(name) > 128:
             return None
 
-        book = Book()
-        book.name = name
-        book.description = description
-        book.count = count
-        if (authors is not None):
-            for elem in authors:
-                book.authors.add(elem)
+        book = Book(name=name, description=description, count=count)
         book.save()
+        if authors:
+            book.authors.set(authors)
         return book
 
     def to_dict(self):
-        """
-        :return: book id, book name, book description, book count, book authors
-        :Example:
-        | {
-        |   'id': 8,
-        |   'name': 'django book',
-        |   'description': 'bla bla bla',
-        |   'count': 10',
-        |   'authors': []
-        | }
-        """
+        return {
+            'id': self.id,
+            'name': self.name,
+            'description': self.description,
+            'count': self.count,
+            'authors': [{'id': author.id, 'name': author.name} for author in self.authors.all()]
+        }
+
+    # @staticmethod
+    # def create(name, description, count=10, authors=None):
+    #     """
+    #     param name: Describes name of the book
+    #     type name: str max_length=128
+    #     param description: Describes description of the book
+    #     type description: str
+    #     param count: Describes count of the book
+    #     type count: int default=10
+    #     param authors: list of Authors
+    #     type authors: list->Author
+    #     :return: a new book object which is also written into the DB
+    #     """
+    #     if len(name) > 128:
+    #         return None
+    #
+    #     book = Book()
+    #     book.name = name
+    #     book.description = description
+    #     book.count = count
+    #     if authors is not None:
+    #         for elem in authors:
+    #             book.authors.add(elem)
+    #     book.save()
+    #     return book
+
+    # def to_dict(self):
+    #     """
+    #     :return: book id, book name, book description, book count, book authors
+    #     :Example:
+    #     | {
+    #     |   'id': 8,
+    #     |   'name': 'django book',
+    #     |   'description': 'bla bla bla',
+    #     |   'count': 10,
+    #     |   'authors': [1, 2]  # List of author IDs
+    #     | }
+    #     """
+    #     return {
+    #         'id': self.id,
+    #         'name': self.name,
+    #         'description': self.description,
+    #         'count': self.count,
+    #         'authors': [author.id for author in self.authors.all()]
+    #     }
 
     def update(self, name=None, description=None, count=None):
         """
@@ -102,27 +130,32 @@ class Book(models.Model):
 
     def add_authors(self, authors):
         """
-        Add  authors to  book in the database with the specified parameters.\n
+        Add authors to book in the database with the specified parameters.\n
         param authors: list authors
         :return: None
         """
-        if (authors is not None):
+        if authors is not None:
             for elem in authors:
                 self.authors.add(elem)
-                self.save()
+            self.save()
 
     def remove_authors(self, authors):
         """
-        Remove authors to  book in the database with the specified parameters.\n
+        Remove authors from the book in the database with the specified parameters.\n
         param authors: list authors
         :return: None
         """
-        for elem in self.authors.values():
-            self.authors.remove(elem['id'])
+        for author in authors:
+            self.authors.remove(author)
 
     @staticmethod
     def get_all():
         """
-        returns data for json request with QuerySet of all books
+        Returns data for JSON request with QuerySet of all books
         """
         return list(Book.objects.all())
+
+    class Meta:
+        verbose_name = "Author"
+        verbose_name_plural = "Authors"
+        ordering = ['name']

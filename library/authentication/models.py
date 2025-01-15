@@ -1,5 +1,5 @@
 import datetime
-
+from django.contrib.auth.models import Permission
 from django.contrib.auth.base_user import AbstractBaseUser, BaseUserManager
 from django.db import models
 
@@ -74,12 +74,19 @@ class CustomUser(AbstractBaseUser):
     # created_at = models.DateTimeField(editable=False, auto_now=datetime.datetime.now())
     # updated_at = models.DateTimeField(auto_now=datetime.datetime.now())
     role = models.IntegerField(choices=ROLE_CHOICES, default=0)
-    is_active = models.BooleanField(default=False)
+    is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)  # Required for admin access
     is_superuser = models.BooleanField(default=False)  # Required for admin permissions
     created_at = models.DateTimeField(auto_now_add=True) # Required
     updated_at = models.DateTimeField(auto_now=True) # Required
     id = models.AutoField(primary_key=True)
+
+    user_permissions = models.ManyToManyField(
+        Permission,                             # Required for admin access
+        verbose_name='user permissions',
+        blank=True,
+        related_name="user_permissions"
+    )
 
     USERNAME_FIELD = 'email'
     REQUIRED_FIELDS = ['first_name', 'last_name'] # Required for admin access
@@ -101,6 +108,18 @@ class CustomUser(AbstractBaseUser):
         :return: class, id
         """
         return f"{CustomUser.__name__}(id={self.id})"
+
+    def has_perm(self, perm, obj=None):
+        """
+        Check if the user has a specific permission.
+        """
+        return self.is_superuser or self.user_permissions.filter(codename=perm).exists() # Required for admin access
+
+    def has_module_perms(self, app_label):
+        """
+        Check if the user has permissions for a particular app.
+        """
+        return self.is_superuser or self.user_permissions.filter(content_type__app_label=app_label).exists()  # Required for admin access
 
     @staticmethod
     def get_by_id(user_id):
